@@ -7,7 +7,6 @@ navToggle.addEventListener('click', () => {
     navLinks.classList.toggle('open');
 });
 
-// Close mobile menu when a link is clicked
 navLinks.querySelectorAll('a').forEach(link => {
     link.addEventListener('click', () => {
         navToggle.classList.remove('active');
@@ -15,9 +14,19 @@ navLinks.querySelectorAll('a').forEach(link => {
     });
 });
 
-// Highlight active nav link on scroll
+// Navbar scroll effect — transparent at top, frosted when scrolled
+const navbar = document.getElementById('navbar');
+
+function updateNavbar() {
+    navbar.classList.toggle('scrolled', window.scrollY > 40);
+}
+
+window.addEventListener('scroll', updateNavbar, { passive: true });
+updateNavbar();
+
+// Active nav link on scroll
 const sections = document.querySelectorAll('section[id]');
-const navItems = document.querySelectorAll('.nav-links a');
+const navItems = document.querySelectorAll('.nav-links a:not(.nav-cta)');
 
 function updateActiveNav() {
     const scrollY = window.scrollY + 100;
@@ -38,23 +47,40 @@ function updateActiveNav() {
     });
 }
 
-window.addEventListener('scroll', updateActiveNav);
+window.addEventListener('scroll', updateActiveNav, { passive: true });
 updateActiveNav();
+
+// Scroll reveal
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            revealObserver.unobserve(entry.target);
+        }
+    });
+}, {
+    threshold: 0.1,
+    rootMargin: '0px 0px -60px 0px'
+});
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
 // Lightbox
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
-document.querySelectorAll('.project-image img').forEach(img => {
+document.querySelectorAll('.clickable-img').forEach(img => {
     img.addEventListener('click', () => {
         lightboxImg.src = img.src;
         lightboxImg.alt = img.alt;
         lightbox.classList.add('open');
+        document.body.style.overflow = 'hidden';
     });
 });
 
 function closeLightbox() {
     lightbox.classList.remove('open');
+    document.body.style.overflow = '';
 }
 
 lightbox.addEventListener('click', (e) => {
