@@ -65,16 +65,96 @@ const revealObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
+// Slideshows
+document.querySelectorAll('.project-slideshow').forEach(slideshow => {
+    const track = slideshow.querySelector('.slideshow-track');
+    const imgs = Array.from(track.querySelectorAll('img'));
+    const dots = Array.from(slideshow.querySelectorAll('.dot'));
+    let current = 0;
+    let timer;
+
+    function goTo(index) {
+        current = (index + imgs.length) % imgs.length;
+        track.style.transform = `translateX(-${current * 100}%)`;
+        dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(() => goTo(current + 1), 3500);
+    }
+
+    slideshow.querySelector('.slideshow-prev').addEventListener('click', e => {
+        e.stopPropagation();
+        goTo(current - 1);
+        startTimer();
+    });
+
+    slideshow.querySelector('.slideshow-next').addEventListener('click', e => {
+        e.stopPropagation();
+        goTo(current + 1);
+        startTimer();
+    });
+
+    dots.forEach((dot, i) => {
+        dot.addEventListener('click', e => {
+            e.stopPropagation();
+            goTo(i);
+            startTimer();
+        });
+    });
+
+    startTimer();
+});
+
 // Lightbox
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
+let lightboxSet = [];
+let lightboxIndex = 0;
+
+const lightboxPrev = document.createElement('button');
+lightboxPrev.className = 'lightbox-nav lightbox-nav-prev';
+lightboxPrev.innerHTML = '&#8249;';
+lightboxPrev.setAttribute('aria-label', 'Previous');
+lightbox.appendChild(lightboxPrev);
+
+const lightboxNext = document.createElement('button');
+lightboxNext.className = 'lightbox-nav lightbox-nav-next';
+lightboxNext.innerHTML = '&#8250;';
+lightboxNext.setAttribute('aria-label', 'Next');
+lightbox.appendChild(lightboxNext);
+
+function openLightbox(images, index) {
+    lightboxSet = images;
+    lightboxIndex = index;
+    lightboxImg.src = images[index].src;
+    lightboxImg.alt = images[index].alt;
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    const multi = images.length > 1;
+    lightboxPrev.style.display = multi ? '' : 'none';
+    lightboxNext.style.display = multi ? '' : 'none';
+}
+
+function lightboxGoTo(index) {
+    lightboxIndex = (index + lightboxSet.length) % lightboxSet.length;
+    lightboxImg.src = lightboxSet[lightboxIndex].src;
+    lightboxImg.alt = lightboxSet[lightboxIndex].alt;
+}
+
+lightboxPrev.addEventListener('click', e => { e.stopPropagation(); lightboxGoTo(lightboxIndex - 1); });
+lightboxNext.addEventListener('click', e => { e.stopPropagation(); lightboxGoTo(lightboxIndex + 1); });
 
 document.querySelectorAll('.clickable-img').forEach(img => {
     img.addEventListener('click', () => {
-        lightboxImg.src = img.src;
-        lightboxImg.alt = img.alt;
-        lightbox.classList.add('open');
-        document.body.style.overflow = 'hidden';
+        const slideshow = img.closest('.project-slideshow');
+        if (slideshow) {
+            const imgs = Array.from(slideshow.querySelectorAll('.clickable-img'));
+            openLightbox(imgs, imgs.indexOf(img));
+        } else {
+            openLightbox([img], 0);
+        }
     });
 });
 
@@ -83,12 +163,15 @@ function closeLightbox() {
     document.body.style.overflow = '';
 }
 
-lightbox.addEventListener('click', (e) => {
+lightbox.addEventListener('click', e => {
     if (e.target === lightbox || e.target.classList.contains('lightbox-close')) {
         closeLightbox();
     }
 });
 
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
+    if (!lightbox.classList.contains('open')) return;
     if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lightboxGoTo(lightboxIndex - 1);
+    if (e.key === 'ArrowRight') lightboxGoTo(lightboxIndex + 1);
 });
